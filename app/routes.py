@@ -111,57 +111,42 @@ from flask import request, jsonify
 from app import db
 from app.models.patients import Patient
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import DateTime
 from datetime import datetime
 
 def handle_error(e, status_code):
     return jsonify({'error': str(e)}), status_code
 
-@bp.route('/patient', methods=['POST'])
-def add_patient_route():
-    """Create a new patient."""
+@bp.route('/patients', methods=['POST'])
+def create_patient():
+    # Get the data from the request
     data = request.json
-    first_name = data.get('first_name', '')
-    last_name = data.get('last_name', '')
-    age = data.get('age', '')
-    gender = data.get('gender', '')
-    contact_number = data.get('contact_number', '')
-    address = data.get('address', '')
-    description = data.get('description', '')
 
-    if not (first_name and age and gender and contact_number and address):
-        return jsonify({'message': 'Error: Missing required fields.'}), 400
+    # Extract data for doctor, receptionist, and nurse from the request
+    doctor_id = data.get('doctor_id')
+    receptionist_id = data.get('receptionist_id')
+    nurse_id = data.get('nurse_id')
 
-    try:
-    #     # Convert date_of_birth_str to a datetime object
-    #     date_of_birth = datetime.strptime(date_of_birth_str, '%d-%m-%Y')
+    # Get the corresponding User objects from the database
+    doctor = User.query.get(doctor_id)
+    receptionist = User.query.get(receptionist_id)
+    nurse = User.query.get(nurse_id)
 
-        # Create a new Patient object
-        patient = Patient(
-            first_name=first_name,
-            last_name=last_name,
-            age=age,
-            gender=gender,
-            contact_number=contact_number,
-            address=address,
-            description=description
-        )
+    # Create the new patient record with the correct references to doctor, receptionist, and nurse
+    new_patient = Patient(
+        first_name=data['first_name'],
+        last_name=data['last_name'],
+        # other patient attributes
+        doctor=doctor,
+        receptionist=receptionist,
+        nurse=nurse
+    )
 
-        # Add the new patient to the database
-        db.session.add(patient)
-        db.session.commit()
+    # Save the new patient record to the database
+    db.session.add(new_patient)
+    db.session.commit()
 
-        return jsonify(patient.serialize()), 201
-
-    except ValueError:
-        return jsonify({'message': 'Error: Invalid DateOfBirth format. It should be in the format dd-mm-yyyy.'}), 400
-
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        return handle_error(e, 500)
-
-
-
-
+    return jsonify(new_patient.serialize()), 201
 
 
 

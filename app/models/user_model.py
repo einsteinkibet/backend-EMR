@@ -1,6 +1,7 @@
+from app import db
 from sqlalchemy.orm import validates
 from flask import flash
-from app import Bcrypt, db
+from app import Bcrypt
 
 bcrypt = Bcrypt()
 
@@ -9,6 +10,11 @@ class User(db.Model):
     username = db.Column(db.String(50), unique=True, nullable=False)
     role = db.Column(db.String(30))
     _password = db.Column("password", db.String(100), nullable=False)
+
+    # Define relationships for patients assigned to the user for different roles
+    patients_doctor = db.relationship('Patient', backref='doctor_user', foreign_keys="[Patient.doctor_id]")
+    patients_receptionist = db.relationship('Patient', backref='receptionist_user', foreign_keys="[Patient.receptionist_id]")
+    patients_nurse = db.relationship('Patient', backref='nurse_user', foreign_keys="[Patient.nurse_id]")
 
     @property
     def password(self):
@@ -57,6 +63,5 @@ class User(db.Model):
         return {
             'id': self.id,
             'username': self.username,
-            'role' : self.role,
-            'password': self._password.decode('utf-8') if isinstance(self._password, bytes) else self._password
+            'role': self.role
         }
